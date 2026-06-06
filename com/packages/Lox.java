@@ -1,4 +1,4 @@
-//package com.craftinginterpreters.lox;
+package com.packages;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
-public class lox {
+public class Lox {
 
   // dont run code if errors
   static boolean hadError = false;
@@ -36,7 +36,6 @@ public class lox {
   }
 
   // interactive session: keep infinite loop and read buffer until user presses
-  // enter
   public static void runPrompt() throws IOException {
     InputStreamReader input = new InputStreamReader(System.in);
     BufferedReader reader = new BufferedReader(input);
@@ -63,7 +62,9 @@ public class lox {
 
   // handeling errors
   static void error(int line, String message) {
-    // TODO: get the precice location of error from the code file -> add to where
+    // TODO: get the precise location of error from the code file -> calculate (SOF
+    // to lexeme len) + (len of lexeme)
+    // dont do for every lexeme, only ones which needs to be reported to user
     report(line, " ", message);
   }
 
