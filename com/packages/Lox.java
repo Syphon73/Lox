@@ -11,9 +11,13 @@ import java.nio.file.Paths;
 import java.util.List;
 
 public class Lox {
+  // private = interpreter remembers values till session is active
+  // final = dont overload interpreter() with a blank one once program runs
+  private static final Interpreter interpreter = new Interpreter();
 
   // dont run code if errors
   static boolean hadError = false;
+  static boolean hadRuntimeError = false;
 
   public static void main(String[] args) throws IOException {
     if (args.length > 1) {
@@ -25,6 +29,8 @@ public class Lox {
       // check for errors after parsing whole file
       if (hadError)
         System.exit(65);
+      else if (hadRuntimeError)
+        System.exit(70);
     } else {
       runPrompt();
     }
@@ -73,6 +79,7 @@ public class Lox {
     if (hadError) {
       return;
     }
+    interpreter.interpret(expression);
     System.out.println(new ASTprint().print(expression));
   }
 
@@ -94,6 +101,11 @@ public class Lox {
     } else {
       report(token.line, " at '" + token.lexeme + "'", message);
     }
+  }
+
+  static void runtimeError(RuntimeError error) {
+    System.err.println(error.getMessage() + "\n[line " + error.token.line + "]");
+    hadRuntimeError = true;
   }
 
   public static void report(int line, String where, String message) {
