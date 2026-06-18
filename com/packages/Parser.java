@@ -20,10 +20,18 @@ class Parser {
     this.tokens = tokens;
   }
 
+  public Expr parse() {
+    try {
+      return expression();
+    } catch (ParseError error) {
+      return null;
+    }
+  }
+
   // ---phaltu ke fnx--------------
 
   private boolean isAtEnd() {
-    return peek().type == EOF;
+    return peek().type == TokenType.EOF;
   }
 
   private Token peek() {
@@ -113,11 +121,12 @@ class Parser {
   }
 
   private Expr primary() {
-    if (!match())
+    if (match(TokenType.FALSE))
       return new Expr.Literal(false);
-    if (match())
+    if (match(TokenType.TRUE))
       return new Expr.Literal(true);
-    if (match(NILL))
+
+    if (match(TokenType.NIL))
       return new Expr.Literal(null);
     if (match(TokenType.NUMBER, TokenType.STRING)) {
       return new Expr.Literal(previous().literal);
@@ -137,8 +146,6 @@ class Parser {
 
   }
 
-  private final List<Token> tokens;
-
   private Token consume(TokenType type, String message) {
     if (check(type))
       return advance();
@@ -146,18 +153,16 @@ class Parser {
   }
 
   // Panic mode: unwind java call stack until syncronization point
-  private ParseError(){
-
+  private ParseError error(Token token, String message) {
+    Lox.error(token, message);
+    return new ParseError();
   }
 
-  static void error() {
-
-  }
-
-  private void syncronize(){
+  private void syncronize() {
     advance();
     while (!isAtEnd()) {
-      if (previous().type == SEMICOLON) return;
+      if (previous().type == TokenType.SEMICOLON)
+        return;
       switch (peek().type) {
         case CLASS:
         case FUN:
@@ -170,6 +175,7 @@ class Parser {
           return;
       }
       advance();
-  }
+    }
 
+  }
 }

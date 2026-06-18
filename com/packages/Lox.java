@@ -1,5 +1,7 @@
 package com.packages;
 
+import com.packages.tool.ASTprint;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -54,18 +56,44 @@ public class Lox {
   public static void tokenRun(String source) {
     Scanner sc = new Scanner(source);
     List<Token> tokens = sc.scanTokens();
-
+    System.out.println("--- TOKENS RECEIVED ---");
     for (Token token : tokens) {
       System.out.println(token);
     }
+
+    Parser parser = new Parser(tokens);
+    Expr expression = parser.parse();
+
+    if (expression == null) {
+      System.out.println("DEBUG: Parser returned NULL!");
+    } else {
+      System.out.println("DEBUG: Expression Class -> " + expression.getClass().getName());
+    }
+
+    if (hadError) {
+      return;
+    }
+    System.out.println(new ASTprint().print(expression));
   }
 
   // handeling errors
-  static void error(int line, String message) {
-    // TODO: get the precise location of error from the code file -> calculate (SOF
-    // to lexeme len) + (len of lexeme)
-    // dont do for every lexeme, only ones which needs to be reported to user
-    report(line, " ", message);
+  // static void error(int line, String message) {
+  // // TODO: get the precise location of error from the code file -> calculate
+  // (SOF
+  // // to lexeme len) + (len of lexeme)
+  // // dont do for every lexeme, only ones which needs to be reported to user
+  // report(line, " ", message);
+  // }
+  public static void error(int line, String message) {
+    report(line, "", message);
+  }
+
+  static void error(Token token, String message) {
+    if (token.type == TokenType.EOF) {
+      report(token.line, " at end", message);
+    } else {
+      report(token.line, " at '" + token.lexeme + "'", message);
+    }
   }
 
   public static void report(int line, String where, String message) {
