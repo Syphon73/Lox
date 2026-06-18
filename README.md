@@ -2,25 +2,15 @@
 
 A tree-walk interpreter for the Lox language, built from scratch in Java based on *Crafting Interpreters*
 
-# Compile and run
+# Setup
 
+compile ASTtreeGenerator to generate Expr automatically
 ```
+javac com/packages/tool/ASTgenr.java
+java com/packages/tool/ASTgenr.java com/packages
 ```
-```java com/packages/tool/ASTgenr.java com/packages
+Compile everything else and fire the parser up
 ```
-```
-```
-```
-```
-````
-```bash
-javac com/packages/tool/ASTgenr.java`
-```
-```java com/packages/tool/ASTgenr.java com/packages`
-```
-```javac com/packages/*.java com/packages/tool/*.java`
-```
-
-```java com.packages.Lox`
-```
+javac com/packages/*.java com/packages/tool/*.java
+java com.packages.Lox
 ```
