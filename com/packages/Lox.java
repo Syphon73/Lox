@@ -68,19 +68,22 @@ public class Lox {
     }
 
     Parser parser = new Parser(tokens);
-    Expr expression = parser.parse();
+    // Expr expression = parser.parse();
+    List<Stmt> statements = parser.parse();
 
-    if (expression == null) {
-      System.out.println("DEBUG: Parser returned NULL!");
-    } else {
-      System.out.println("DEBUG: Expression Class -> " + expression.getClass().getName());
-    }
+    // if (expression == null) {
+    // System.out.println("DEBUG: Parser returned NULL!");
+    // } else {
+    // System.out.println("DEBUG: Expression Class -> " +
+    // expression.getClass().getName());
+    // }
 
-    if (hadError) {
-      return;
-    }
-    interpreter.interpret(expression);
-    System.out.println(new ASTprint().print(expression));
+    // if (hadError) {
+    // return;
+    // }
+    // interpreter.interpret(expression);
+    interpreter.interpret(statements);
+    // System.out.println(new ASTprint().print(expression));
   }
 
   // handeling errors
@@ -109,7 +112,7 @@ public class Lox {
   }
 
   public static void report(int line, String where, String message) {
-    System.err.println("[line " + line + "] Error" + where + ": " + message + " !Good luck fixing it :D");
+    System.err.println("[line " + line + "] Lox Error" + where + ": " + message + " !Good luck fixing it :D");
     hadError = true;
   }
 }

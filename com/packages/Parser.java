@@ -1,6 +1,10 @@
 package com.packages;
 
 import java.util.List;
+
+import com.packages.TokenType;
+
+import java.util.ArrayList;
 import static com.packages.TokenType.*;
 
 //Lox Grammar (recursive descent: top-bottom) (priority: bottom-top)
@@ -20,12 +24,13 @@ class Parser {
     this.tokens = tokens;
   }
 
-  public Expr parse() {
-    try {
-      return expression();
-    } catch (ParseError error) {
-      return null;
+  // loop throgh the whole file instead of one statement
+  List<Stmt> parse() {
+    List<Stmt> statements = new ArrayList<>();
+    while (!isAtEnd()) {
+      statements.add(statement());
     }
+    return statements;
   }
 
   // ---phaltu ke fnx--------------
@@ -82,6 +87,27 @@ class Parser {
       expr = new Expr.Binary(expr, operator, right);
     }
     return expr;
+  }
+
+  // parsing each statement in file
+  private Stmt statement() {
+    if (match(TokenType.PRINT))
+      return printStatement();
+    return expressionStatement();
+  }
+
+  private Stmt printStatement() {
+    consume(TokenType.LEFT_PAREN, "Expect '(' after print");
+    Expr value = expression();
+    consume(TokenType.RIGHT_PAREN, "Expect a ')' after value");
+    consume(TokenType.SEMICOLON, "Expect ';' after value");
+    return new Stmt.Print(value);
+  }
+
+  private Stmt expressionStatement() {
+    Expr expr = expression();
+    consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+    return new Stmt.Expression(expr);
   }
 
   // ---main grammar---------

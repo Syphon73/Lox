@@ -1,8 +1,9 @@
 package com.packages;
 
 import com.packages.Expr;
+import java.util.List;
 
-public class Interpreter implements Expr.Visitor<Object> {
+public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   // from parser pull out the literal from tree-node to evaluate it into a Lox
   // object
   // and send to Interpreter
@@ -18,6 +19,25 @@ public class Interpreter implements Expr.Visitor<Object> {
 
   private Object evaluate(Expr expr) {
     return expr.accept(this);
+  }
+
+  private void execute(Stmt stmt) {
+    stmt.accept(this);
+  }
+
+  @Override
+  public Void visitExpressionStmt(Stmt.Expression stmt) {
+    evaluate(stmt.expression);
+    return null;
+  }
+
+  // since its a statement, evaluate the expression but return null
+  // Stmt type is Void
+  @Override
+  public Void visitPrintStmt(Stmt.Print stmt) {
+    Object value = evaluate(stmt.expression);
+    System.out.println(stringify(value));
+    return null;
   }
 
   @Override
@@ -115,12 +135,17 @@ public class Interpreter implements Expr.Visitor<Object> {
   }
 
   // main public API for Interpreter
-  void interpret(Expr expression) {
+  void interpret(List<Stmt> statements) {
     try {
-      // evaluate AST to a single Java object
-      Object value = evaluate(expression);
-      // print object in a nice string format
-      System.out.println(stringify(value));
+      // // evaluate AST to a single Java object
+      // Object value = evaluate(expression);
+      // // print object in a nice string format
+      // System.out.println(stringify(value));
+
+      // accept the list of stmts from programme
+      for (Stmt statement : statements) {
+        execute(statement);
+      }
     } catch (RuntimeError error) {
       Lox.runtimeError(error);
     }
