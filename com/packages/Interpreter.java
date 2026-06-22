@@ -26,8 +26,37 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   }
 
   @Override
+  public Void visitBlockStmt(Stmt.Block stmt) {
+    executeBlock(stmt.statements, new Environment(environment));
+    return null;
+  }
+
+  // switching environments
+  void executeBlock(List<Stmt> statements, Environment environment) {
+    Environment previous = this.environment; // Save current block in call stack
+    try {
+      this.environment = environment; // Switch to inner block and new values in call stack
+      for (Stmt statement : statements) {
+        execute(statement);
+      }
+    } finally {
+      this.environment = previous; // restore the previous block call stack
+    }
+  }
+
+  @Override
   public Void visitExpressionStmt(Stmt.Expression stmt) {
     evaluate(stmt.expression);
+    return null;
+  }
+
+  @Override
+  public Void visitIfStmt(Stmt.If stmt) {
+    if (isTruthy(stmt.condition)) {
+      execute(stmt.thenBranch);
+    } else if (stmt.elseBranch != null) {
+      execute(stmt.elseBranch);
+    }
     return null;
   }
 
@@ -38,6 +67,30 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     Object value = evaluate(stmt.expression);
     System.out.println(stringify(value));
     return null;
+  }
+
+  // declaring variables from environment
+  @Override
+  public Void visitVarStmt(Stmt.Var stmt) {
+    Object value = null;
+    if (stmt.initializer != null) {
+      value = evaluate(stmt.initializer);
+    }
+    environment.define(stmt.name.lexeme, value);
+    return null;
+  }
+
+  // visiting variables from the environment
+  @Override
+  public Object visitVariableExpr(Expr.Variable expr) {
+    return environment.get(expr.name);
+  }
+
+  @Override
+  public Object visitAssignExpr(Expr.Assign expr) {
+    Object value = evaluate(expr.value);
+    environment.assign(expr.name, value);
+    return value;
   }
 
   @Override
@@ -133,6 +186,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     return null;
   }
+
+  private Environment environment = new Environment();
 
   // main public API for Interpreter
   void interpret(List<Stmt> statements) {

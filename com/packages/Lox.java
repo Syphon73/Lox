@@ -1,3 +1,7 @@
+//TODO: implement % operator
+//
+//
+
 package com.packages;
 
 import com.packages.tool.ASTprint;
@@ -62,10 +66,10 @@ public class Lox {
   public static void tokenRun(String source) {
     Scanner sc = new Scanner(source);
     List<Token> tokens = sc.scanTokens();
-    System.out.println("--- TOKENS RECEIVED ---");
-    for (Token token : tokens) {
-      System.out.println(token);
-    }
+    // System.out.println("--- TOKENS RECEIVED ---");
+    // for (Token token : tokens) {
+    // System.out.println(token);
+    // }
 
     Parser parser = new Parser(tokens);
     // Expr expression = parser.parse();
