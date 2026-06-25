@@ -1,3 +1,7 @@
+//TODO: implement % operator
+//
+//
+
 package com.packages;
 
 import com.packages.tool.ASTprint;
@@ -62,25 +66,28 @@ public class Lox {
   public static void tokenRun(String source) {
     Scanner sc = new Scanner(source);
     List<Token> tokens = sc.scanTokens();
-    System.out.println("--- TOKENS RECEIVED ---");
-    for (Token token : tokens) {
-      System.out.println(token);
-    }
+    // System.out.println("--- TOKENS RECEIVED ---");
+    // for (Token token : tokens) {
+    // System.out.println(token);
+    // }
 
     Parser parser = new Parser(tokens);
-    Expr expression = parser.parse();
+    // Expr expression = parser.parse();
+    List<Stmt> statements = parser.parse();
 
-    if (expression == null) {
-      System.out.println("DEBUG: Parser returned NULL!");
-    } else {
-      System.out.println("DEBUG: Expression Class -> " + expression.getClass().getName());
-    }
+    // if (expression == null) {
+    // System.out.println("DEBUG: Parser returned NULL!");
+    // } else {
+    // System.out.println("DEBUG: Expression Class -> " +
+    // expression.getClass().getName());
+    // }
 
-    if (hadError) {
-      return;
-    }
-    interpreter.interpret(expression);
-    System.out.println(new ASTprint().print(expression));
+    // if (hadError) {
+    // return;
+    // }
+    // interpreter.interpret(expression);
+    interpreter.interpret(statements);
+    // System.out.println(new ASTprint().print(expression));
   }
 
   // handeling errors
@@ -109,7 +116,7 @@ public class Lox {
   }
 
   public static void report(int line, String where, String message) {
-    System.err.println("[line " + line + "] Error" + where + ": " + message + " !Good luck fixing it :D");
+    System.err.println("[line " + line + "] Lox Error" + where + ": " + message + " !Good luck fixing it :D");
     hadError = true;
   }
 }

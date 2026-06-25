@@ -1,8 +1,9 @@
 package com.packages;
 
 import com.packages.Expr;
+import java.util.List;
 
-public class Interpreter implements Expr.Visitor<Object> {
+public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   // from parser pull out the literal from tree-node to evaluate it into a Lox
   // object
   // and send to Interpreter
@@ -12,12 +13,107 @@ public class Interpreter implements Expr.Visitor<Object> {
   }
 
   @Override
+  public Object visitLogicalExpr(Expr.Logical expr) {
+    Object left = evaluate(expr.left);
+    if (expr.operator.type == TokenType.OR) {
+      if (isTruthy(left))
+        return left;
+    } else {
+      if (!isTruthy(left))
+        return left;
+    }
+
+    return evaluate(expr.right);
+  }
+
+  @Override
   public Object visitGroupingExpr(Expr.Grouping expr) {
     return evaluate(expr.expression);
   }
 
   private Object evaluate(Expr expr) {
     return expr.accept(this);
+  }
+
+  private void execute(Stmt stmt) {
+    stmt.accept(this);
+  }
+
+  @Override
+  public Void visitBlockStmt(Stmt.Block stmt) {
+    executeBlock(stmt.statements, new Environment(environment));
+    return null;
+  }
+
+  // switching environments
+  void executeBlock(List<Stmt> statements, Environment environment) {
+    Environment previous = this.environment; // Save current block in call stack
+    try {
+      this.environment = environment; // Switch to inner block and new values in call stack
+      for (Stmt statement : statements) {
+        execute(statement);
+      }
+    } finally {
+      this.environment = previous; // restore the previous block call stack
+    }
+  }
+
+  @Override
+  public Void visitExpressionStmt(Stmt.Expression stmt) {
+    evaluate(stmt.expression);
+    return null;
+  }
+
+  @Override
+  public Void visitIfStmt(Stmt.If stmt) {
+    if (isTruthy(evaluate(stmt.condition))) {
+      execute(stmt.thenBranch);
+    } else if (stmt.elseBranch != null) {
+      execute(stmt.elseBranch);
+    }
+    return null;
+  }
+
+  // since its a statement, evaluate the expression but return null
+  // Stmt type is Void
+  @Override
+  public Void visitPrintStmt(Stmt.Print stmt) {
+    Object value = evaluate(stmt.expression);
+    System.out.println(stringify(value));
+    return null;
+  }
+
+  // declaring variables from environment
+  @Override
+  public Void visitVarStmt(Stmt.Var stmt) {
+    Object value = null;
+    if (stmt.initializer != null) {
+      value = evaluate(stmt.initializer);
+    }
+    environment.define(stmt.name.lexeme, value);
+    return null;
+  }
+
+  // visiting variables from the environment
+  @Override
+  public Object visitVariableExpr(Expr.Variable expr) {
+    return environment.get(expr.name);
+  }
+
+  @Override
+  public Void visitWhileStmt(Stmt.While stmt) {
+    while (isTruthy(evaluate(stmt.condition))) {
+      execute(stmt.body);
+    }
+
+    return null;
+  }
+
+  @Override
+  public Object visitAssignExpr(Expr.Assign expr) {
+    Object value = evaluate(expr.value);
+    environment.assign(expr.name, value);
+    return value;
   }
 
   @Override
@@ -114,13 +210,21 @@ public class Interpreter implements Expr.Visitor<Object> {
     return null;
   }
 
+  // ---------environment and main interpreter()------------
+  private Environment environment = new Environment();
+
   // main public API for Interpreter
-  void interpret(Expr expression) {
+  void interpret(List<Stmt> statements) {
     try {
-      // evaluate AST to a single Java object
-      Object value = evaluate(expression);
-      // print object in a nice string format
-      System.out.println(stringify(value));
+      // // evaluate AST to a single Java object
+      // Object value = evaluate(expression);
+      // // print object in a nice string format
+      // System.out.println(stringify(value));
+
+      // accept the list of stmts from programme
+      for (Stmt statement : statements) {
+        execute(statement);
+      }
     } catch (RuntimeError error) {
       Lox.runtimeError(error);
     }
