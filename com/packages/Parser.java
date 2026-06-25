@@ -5,6 +5,7 @@ import java.util.List;
 import com.packages.TokenType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import static com.packages.TokenType.*;
 
 //Lox Grammar (recursive descent: top-bottom) (priority: bottom-top)
@@ -93,12 +94,18 @@ class Parser {
   private Stmt statement() {
     if (match(TokenType.PRINT))
       return printStatement();
+    if (match(TokenType.IF))
+      return ifStatement();
+    if (match(TokenType.WHILE))
+      return whileStatement();
+    if (match(TokenType.FOR))
+      return forStatement();
     if (match(TokenType.LEFT_BRACE))
       return new Stmt.Block(block());
     return expressionStatement();
   }
 
-  private Stmt ifstatement() {
+  private Stmt ifStatement() {
     consume(TokenType.LEFT_PAREN, "Expect '(' after 'if' ");
     Expr condition = expression();
     consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition");
@@ -130,6 +137,63 @@ class Parser {
     return new Stmt.Var(name, initializer);
   }
 
+  // TODO: create incrementing condition for i++ and i--
+  private Stmt whileStatement() {
+    consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.");
+    Expr condition = expression();
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.");
+    Stmt body = statement();
+
+    return new Stmt.While(condition, body);
+  }
+
+  private Stmt forStatement() {
+    consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.");
+
+    // initializer
+    Stmt initializer;
+    if (match(TokenType.SEMICOLON)) {
+      initializer = null;
+    } else if (match(TokenType.VAR)) {
+      initializer = varDeclaration();
+    } else {
+      initializer = expressionStatement();
+    }
+
+    // condition
+    Expr condition = null;
+    if (!check(TokenType.SEMICOLON)) {
+      condition = expression();
+    }
+    consume(TokenType.SEMICOLON, "Expect ';' after loop condition.");
+
+    // incrementation
+    Expr increment = null;
+    if (!check(TokenType.RIGHT_PAREN)) {
+      increment = expression();
+    }
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.");
+
+    // body of the loop
+    Stmt body = statement();
+
+    // inner local block, run body -> i++ -> increment body
+    if (increment != null) {
+      body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
+    }
+
+    // for(;;)
+    if (condition == null) {
+      condition = new Expr.Literal(true);
+    }
+    body = new Stmt.While(condition, body);
+    if (initializer != null) {
+      body = new Stmt.Block(Arrays.asList(initializer, body));
+    }
+
+    return body;
+  }
+
   private Stmt expressionStatement() {
     Expr expr = expression();
     consume(TokenType.SEMICOLON, "Expect ';' after expression");
@@ -154,8 +218,21 @@ class Parser {
     }
   }
 
+  private List<Stmt> block() {
+    List<Stmt> statements = new ArrayList<>();
+
+    while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+      statements.add(declaration());
+    }
+
+    consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+    return statements;
+  }
+
   private Expr assignment() {
-    Expr expr = equality();
+
+    Expr expr = or();
+
     if (match(TokenType.EQUAL)) {
       Token equals = previous();
       Expr value = assignment();
@@ -169,15 +246,25 @@ class Parser {
     return expr;
   }
 
-  private List<Stmt> block() {
-    List<Stmt> statements = new ArrayList<>();
-
-    while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
-      statements.add(declaration());
+  private Expr or() {
+    Expr expr = and(); // higher precedence
+    while (match(TokenType.OR)) {
+      Token operator = previous();
+      Expr right = and();
+      expr = new Expr.Logical(expr, operator, right);
     }
+    return expr;
+  }
 
-    consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
-    return statements;
+  private Expr and() {
+    Expr expr = equality();
+
+    while (match(TokenType.AND)) {
+      Token operator = previous();
+      Expr right = equality();
+      expr = new Expr.Logical(expr, operator, right);
+    }
+    return expr;
   }
 
   private Expr equality() {
