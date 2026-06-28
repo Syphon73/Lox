@@ -2,11 +2,15 @@ package com.packages;
 
 import com.packages.Expr;
 import java.util.List;
+import java.util.ArrayList;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
-  // from parser pull out the literal from tree-node to evaluate it into a Lox
-  // object
-  // and send to Interpreter
+  // from parser pull out the literal from tree-node
+  // to evaluate it into a Lox object and send to Interpreter
+
+  final Environment globals = new Environment();
+  private Environment environment = globals; // save the outermost environment
+
   @Override
   public Object visitLiteralExpr(Expr.Literal expr) {
     return expr.value;
@@ -61,6 +65,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
   @Override
   public Void visitExpressionStmt(Stmt.Expression stmt) {
     evaluate(stmt.expression);
+    return null;
+  }
+
+  @Override
+  public Void visitFunctionStmt(Stmt.Function stmt) {
+    LoxFunction function = new LoxFunction(stmt);
+    environment.define(stmt.name.lexeme, function);
     return null;
   }
 
@@ -210,8 +221,29 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     return null;
   }
 
+  @Override
+  public Object visitCallExpr(Expr.Call expr) {
+    Object callee = evaluate(expr.callee);
+
+    List<Object> arguments = new ArrayList<>();
+    for (Expr argument : expr.arguments) {
+      arguments.add(evaluate(argument));
+    }
+
+    if (!(callee instanceof LoxCallable)) {
+      throw new RuntimeError(expr.paren, "Can only call functions and classes");
+    }
+
+    // arity (proper aurgument count) check
+    LoxCallable function = (LoxCallable) callee;
+    if (arguments.size() != function.arity()) {
+      throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size());
+    }
+    return function.call(this, arguments);
+  }
+
   // ---------environment and main interpreter()------------
-  private Environment environment = new Environment();
+  // private Environment environment = new Environment();
 
   // main public API for Interpreter
   void interpret(List<Stmt> statements) {
@@ -229,6 +261,26 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       Lox.runtimeError(error);
     }
 
+  }
+
+  // global function clock
+  Interpreter() {
+    globals.define("clock", new LoxCallable() {
+      @Override
+      public int arity() {
+        return 0;
+      }
+
+      @Override
+      public Object call(Interpreter interpreter, List<Object> arguments) {
+        return (double) System.currentTimeMillis() / 1000.0;
+      }
+
+      @Override
+      public String toString() {
+        return "<native fn>";
+      }
+    });
   }
 
   private String stringify(Object object) {

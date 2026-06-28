@@ -26,7 +26,7 @@ class Scanner {
     keywords.put("else", TokenType.ELSE);
     keywords.put("false", TokenType.FALSE);
     keywords.put("for", TokenType.FOR);
-    keywords.put("fun", TokenType.FUN);
+    keywords.put("func", TokenType.FUNC);
     keywords.put("if", TokenType.IF);
     keywords.put("nil", TokenType.NIL);
     keywords.put("or", TokenType.OR);
@@ -182,7 +182,7 @@ class Scanner {
   }
 
   private boolean isAlpha(char str) {
-    return (str >= 'a' && str <= 'z') || (str == '_') || (str >= '0' && str <= '9');
+    return (str >= 'a' && str <= 'z') || (str == '_') || (str >= 'A' && str <= 'Z');
   }
 
   private boolean checkalpha(char str) {
