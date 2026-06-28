@@ -82,9 +82,9 @@ public class Lox {
     // expression.getClass().getName());
     // }
 
-    // if (hadError) {
-    // return;
-    // }
+    if (hadError) {
+      return;
+    }
     // interpreter.interpret(expression);
     interpreter.interpret(statements);
     // System.out.println(new ASTprint().print(expression));

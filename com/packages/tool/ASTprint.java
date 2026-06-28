@@ -49,6 +49,13 @@ public class ASTprint implements Expr.Visitor<String> {
     return parenthesize("= " + expr.name.lexeme, expr.value);
   }
 
+  @Override
+  public String visitCallExpr(Expr.Call expr) {
+    // return parenthesize("call", expr.callee, expr.arguments.toArray(new
+    // Expr[0]));
+    return "(call " + expr.callee.toString() + ")";
+  }
+
   private String parenthesize(String name, Expr... exprs) {
     StringBuilder builder = new StringBuilder();
 

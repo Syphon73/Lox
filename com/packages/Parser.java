@@ -122,7 +122,7 @@ class Parser {
   private Stmt printStatement() {
     consume(TokenType.LEFT_PAREN, "Expect '(' after print");
     Expr value = expression();
-    consume(TokenType.RIGHT_PAREN, "Expect a ')' after value");
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after value");
     consume(TokenType.SEMICOLON, "Expect ';' after value");
     return new Stmt.Print(value);
   }
@@ -139,16 +139,16 @@ class Parser {
 
   // TODO: create incrementing condition for i++ and i--
   private Stmt whileStatement() {
-    consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.");
+    consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'");
     Expr condition = expression();
-    consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.");
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after condition");
     Stmt body = statement();
 
     return new Stmt.While(condition, body);
   }
 
   private Stmt forStatement() {
-    consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.");
+    consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'");
 
     // initializer
     Stmt initializer;
@@ -165,14 +165,14 @@ class Parser {
     if (!check(TokenType.SEMICOLON)) {
       condition = expression();
     }
-    consume(TokenType.SEMICOLON, "Expect ';' after loop condition.");
+    consume(TokenType.SEMICOLON, "Expect ';' after loop condition");
 
     // incrementation
     Expr increment = null;
     if (!check(TokenType.RIGHT_PAREN)) {
       increment = expression();
     }
-    consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.");
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses");
 
     // body of the loop
     Stmt body = statement();
@@ -194,10 +194,47 @@ class Parser {
     return body;
   }
 
+  private Expr finishCall(Expr callee) {
+    List<Expr> arguments = new ArrayList<>();
+    if (!check(TokenType.RIGHT_PAREN)) {
+      do {
+        if (arguments.size() >= 255) {
+          error(peek(), "Can't have more than 255 arguments");
+        }
+        arguments.add(expression());
+      } while (match(TokenType.COMMA));
+    }
+
+    Token paren = consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments");
+    return new Expr.Call(callee, paren, arguments);
+  }
+
   private Stmt expressionStatement() {
     Expr expr = expression();
     consume(TokenType.SEMICOLON, "Expect ';' after expression");
     return new Stmt.Expression(expr);
+  }
+
+  private Stmt.Function function(String kind) {
+    Token name = consume(TokenType.IDENTIFIER, "Expect " + kind + " name");
+    consume(TokenType.LEFT_PAREN, "Expect '(' after " + kind + " name");
+    List<Token> parameters = new ArrayList<>();
+
+    // parse parameters separated by commas
+    if (!check(TokenType.RIGHT_PAREN)) {
+      do {
+        if (parameters.size() >= 255) {
+          error(peek(), "Can't have more than 255 parameters.");
+        }
+        parameters.add(
+            consume(TokenType.IDENTIFIER, "Expect parameter name."));
+      } while (match(TokenType.COMMA));
+    }
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters");
+    consume(TokenType.LEFT_BRACE, "Expect '{' before " + kind + " body");
+    List<Stmt> body = block();
+
+    return new Stmt.Function(name, parameters, body);
   }
 
   // ---main grammar---------
@@ -208,8 +245,11 @@ class Parser {
 
   private Stmt declaration() {
     try {
+      if (match(TokenType.FUNC))
+        return function("function");
       if (match(TokenType.VAR))
         return varDeclaration();
+
       return statement();
     } catch (ParseError error) {
       syncronize();
@@ -225,7 +265,7 @@ class Parser {
       statements.add(declaration());
     }
 
-    consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+    consume(TokenType.RIGHT_BRACE, "Expect '}' after block");
     return statements;
   }
 
@@ -294,7 +334,8 @@ class Parser {
       Expr right = unary();
       return new Expr.Unary(operator, right);
     }
-    return primary();
+    // return primary();
+    return call();
   }
 
   private Expr primary() {
@@ -313,11 +354,23 @@ class Parser {
     }
     if (match(TokenType.LEFT_PAREN)) {
       Expr expr = expression();
-      consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
+      consume(TokenType.RIGHT_PAREN, "Expect ')' after expression");
       return new Expr.Grouping(expr);
     }
 
-    throw error(peek(), "Expect expression.");
+    throw error(peek(), "Expect expression");
+  }
+
+  private Expr call() {
+    Expr expr = primary();
+    while (true) {
+      if (match(TokenType.LEFT_PAREN)) {
+        expr = finishCall(expr);
+      } else {
+        break;
+      }
+    }
+    return expr;
   }
 
   // -----error reporting---------------
@@ -345,7 +398,7 @@ class Parser {
         return;
       switch (peek().type) {
         case CLASS:
-        case FUN:
+        case FUNC:
         case VAR:
         case FOR:
         case IF:
